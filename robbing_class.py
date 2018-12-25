@@ -2,6 +2,7 @@ from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
+from selenium.common.exceptions import  NoSuchElementException
 import json
 
 
@@ -37,6 +38,7 @@ class Worm:
         lesson_btn = self.driver.find_element_by_xpath('//a[@href="/course_selection/courseselect/stuschedule/"]')
         lesson_btn.click()
         while True:
+            '''
             # 课余量查询
             cp_menu = self.driver.find_element_by_xpath('//a[@href="/course_selection/courseselecttask/remains/"]')
             cp_menu.click()
@@ -52,41 +54,52 @@ class Worm:
             if len(tr) < 2:
                 continue
             td = tr[1].find_elements_by_xpath('.//td')
+            '''
 
-            if int(td[4].text) > 0:
-                # 开始选课/抢课
-                select_menu = self.driver.find_element_by_xpath(
-                    '//a[@href="/course_selection/courseselecttask/selects/"]'
-                )
-                select_menu.click()
-                WebDriverWait(self.driver, 20).until(
-                    EC.url_to_be('https://dean.bjtu.edu.cn/course_selection/courseselecttask/selects/')
-                )
-                WebDriverWait(self.driver, 20).until(
-                    EC.presence_of_all_elements_located((By.XPATH, '//iframe'))
-                )
-                # 需要进入frame才能获得元素
-                iframe = self.driver.find_element_by_xpath(
-                    '//iframe[@src="/course_selection/courseselecttask/selects_action/?action=load&iframe=school"]'
-                )
-                self.driver.switch_to.frame(iframe)
-                lesson_num_input = self.driver.find_element_by_xpath('//input[@name="kch"]')
-                lesson_num_input.send_keys(self.lesson_num)
-                lesson_serial_input = self.driver.find_element_by_xpath('//input[@name="kxh"]')
-                lesson_serial_input.send_keys(self.lesson_serial)
-                lesson__query = self.driver.find_element_by_xpath('//button[@name="submit"]')
-                lesson__query.click()
-                tr = self.driver.find_elements_by_xpath('//tbody/tr')
-                lesson_checkbox = tr[1].find_elements_by_xpath('.//td')
-                lesson_checkbox[0].click()
-                self.driver.switch_to.default_content()
-                # 处理确认的弹窗
+            # if int(td[4].text) > 0:
+            # 开始选课/抢课
+            select_menu = self.driver.find_element_by_xpath(
+                '//a[@href="/course_selection/courseselecttask/selects/"]'
+            )
+            select_menu.click()
+            WebDriverWait(self.driver, 20).until(
+                EC.url_to_be('https://dean.bjtu.edu.cn/course_selection/courseselecttask/selects/')
+            )
+            WebDriverWait(self.driver, 20).until(
+                EC.presence_of_all_elements_located((By.XPATH, '//iframe'))
+            )
+            # 需要进入frame才能获得元素
+            iframe = self.driver.find_element_by_xpath(
+                '//iframe[@src="/course_selection/courseselecttask/selects_action/?action=load&iframe=school"]'
+            )
+            self.driver.switch_to.frame(iframe)
+            lesson_num_input = self.driver.find_element_by_xpath('//input[@name="kch"]')
+            lesson_num_input.send_keys(self.lesson_num)
+            lesson_serial_input = self.driver.find_element_by_xpath('//input[@name="kxh"]')
+            lesson_serial_input.send_keys(self.lesson_serial)
+            lesson__query = self.driver.find_element_by_xpath('//button[@name="submit"]')
+            lesson__query.click()
+            tr = self.driver.find_elements_by_xpath('//tbody/tr')
+            if len(tr) == 1:  # 没找到这个课
+                continue
+            lesson_checkbox = tr[1].find_elements_by_xpath('.//td')
+            if int(lesson_checkbox[5].text) == 0:  # 课余量查询
+                continue
+            for i in range(1, len(tr)):
+                lesson_checkbox_item = tr[i].find_elements_by_xpath('.//td')
+                lesson_checkbox_item[0].click()
+            self.driver.switch_to.default_content()
+            # 处理确认的弹窗, 没有弹窗则跳过
+            try:
                 x_btn = self.driver.find_element_by_xpath('//button[@class="bootbox-close-button close"]')
                 x_btn.click()
-                self.driver.switch_to.frame(iframe)
-                submit_btn = self.driver.find_element_by_xpath('//a[@id="select-submit-btn"]')
-                submit_btn.click()
-                break
+            except NoSuchElementException:
+                pass
+
+            self.driver.switch_to.frame(iframe)
+            submit_btn = self.driver.find_element_by_xpath('//a[@id="select-submit-btn"]')
+            submit_btn.click()  # 提交
+            break
 
     def run(self):
         self._login()
