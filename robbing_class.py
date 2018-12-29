@@ -89,8 +89,14 @@ class Worm:
             tr = self.driver.find_elements_by_xpath('//tbody/tr')
             if len(tr) == 1:  # 没找到这个课
                 continue
-            lesson_checkbox = tr[1].find_elements_by_xpath('.//td')
-            if int(lesson_checkbox[5].text) == 0:  # 课余量查询
+            count = 0
+            for lesson_checkbox in tr[1:]:
+                lesson_checkbox_i = lesson_checkbox.find_elements_by_xpath('.//td')
+                if int(lesson_checkbox_i[5].text) != 0:  # 课余量查询
+                    count += 1
+                    break
+
+            if count == 0:
                 continue
             for i in range(1, len(tr)):
                 lesson_checkbox_item = tr[i].find_elements_by_xpath('.//td')

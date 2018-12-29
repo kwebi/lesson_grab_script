@@ -1,3 +1,5 @@
 /venv
 /*.log
 /.idea*
+/.vscode
+/config.json
