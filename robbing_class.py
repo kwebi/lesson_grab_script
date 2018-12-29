@@ -4,11 +4,13 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import  NoSuchElementException
 import json
+import time
 
 
 class Worm:
     def __init__(self):
-        self.driver = webdriver.Firefox(executable_path='./firefox_driver/geckodriver.exe')
+        # self.driver = webdriver.Chrome(executable_path='./driver/chromedriver.exe')
+        self.driver = webdriver.Firefox(executable_path='./driver/geckodriver.exe')
         self.login_url = 'https://mis.bjtu.edu.cn'
         self.rob_url = 'https://mis.bjtu.edu.cn/module/module/322/'
         with open('config.json', 'r', encoding='UTF-8') as json_f:
@@ -37,6 +39,26 @@ class Worm:
         print('跳转教务系统成功')
         lesson_btn = self.driver.find_element_by_xpath('//a[@href="/course_selection/courseselect/stuschedule/"]')
         lesson_btn.click()
+        self.driver.switch_to.default_content()
+        select_menu = self.driver.find_element_by_xpath(
+            '//a[@href="/course_selection/courseselecttask/selects/"]'
+        )
+        select_menu.click()
+        WebDriverWait(self.driver, 20).until(
+            EC.url_to_be('https://dean.bjtu.edu.cn/course_selection/courseselecttask/selects/')
+        )
+        WebDriverWait(self.driver, 20).until(
+            EC.presence_of_all_elements_located((By.XPATH, '//iframe'))
+        )
+        # 需要进入frame才能获得元素
+        iframe = self.driver.find_element_by_xpath(
+            '//iframe[@src="/course_selection/courseselecttask/selects_action/?action=load&iframe=school"]'
+        )
+        self.driver.switch_to.frame(iframe)
+        lesson_num_input = self.driver.find_element_by_xpath('//input[@name="kch"]')
+        lesson_num_input.send_keys(self.lesson_num)
+        lesson_serial_input = self.driver.find_element_by_xpath('//input[@name="kxh"]')
+        lesson_serial_input.send_keys(self.lesson_serial)
         while True:
             '''
             # 课余量查询
@@ -58,27 +80,12 @@ class Worm:
 
             # if int(td[4].text) > 0:
             # 开始选课/抢课
-            select_menu = self.driver.find_element_by_xpath(
-                '//a[@href="/course_selection/courseselecttask/selects/"]'
-            )
-            select_menu.click()
-            WebDriverWait(self.driver, 20).until(
-                EC.url_to_be('https://dean.bjtu.edu.cn/course_selection/courseselecttask/selects/')
-            )
-            WebDriverWait(self.driver, 20).until(
-                EC.presence_of_all_elements_located((By.XPATH, '//iframe'))
-            )
-            # 需要进入frame才能获得元素
-            iframe = self.driver.find_element_by_xpath(
-                '//iframe[@src="/course_selection/courseselecttask/selects_action/?action=load&iframe=school"]'
-            )
-            self.driver.switch_to.frame(iframe)
-            lesson_num_input = self.driver.find_element_by_xpath('//input[@name="kch"]')
-            lesson_num_input.send_keys(self.lesson_num)
-            lesson_serial_input = self.driver.find_element_by_xpath('//input[@name="kxh"]')
-            lesson_serial_input.send_keys(self.lesson_serial)
             lesson__query = self.driver.find_element_by_xpath('//button[@name="submit"]')
+            time.sleep(1)
             lesson__query.click()
+            WebDriverWait(self.driver, 60).until(
+                EC.presence_of_all_elements_located((By.XPATH, '//tbody'))
+            )
             tr = self.driver.find_elements_by_xpath('//tbody/tr')
             if len(tr) == 1:  # 没找到这个课
                 continue
